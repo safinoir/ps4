@@ -22,3 +22,13 @@ The script fetches current conditions from Weatherstack and prints selected fiel
 Metric uses Celsius and km/h, imperial uses Fahrenheit and mph, and scientific uses Kelvin and km/h. The Weatherstack API key is set in `ACCESS_KEY` near the top of the script.
 
 Python 3 and an internet connection are required. No extra Python packages are needed.
+
+## Navigator chatbot
+
+`api_chat.py` is a simple terminal chatbot using UF Navigator's OpenAI-compatible endpoint and the `meta-muse-glimmer-30b` model.
+
+1. Replace `YOUR_API_KEY_HERE` in `api_chat.py` with your Navigator API key.
+2. Press Run in your editor's terminal, or run `python api_chat.py`.
+3. Type a message and press Enter. Type `quit` or `exit` to stop.
+
+The chatbot keeps conversation history until you exit. It uses only Python's standard library.
