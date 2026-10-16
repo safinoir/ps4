@@ -11,3 +11,13 @@ For each API, write a script (or Jupyter Notebook) to retrieve information using
 So, one API per group member, use Python to interact with the API, do something with the returned data beyond just printing the whole raw return.
 
 Submit as a link to a public github repository. We will try doing peer review for this assignment. I hope in addition to reviewing each other's code you will see more examples of working APIs and what can be done using them.
+
+## Weatherstack Field Note
+
+The script fetches current conditions from Weatherstack and turns selected fields into a compact field note with visual meters and a condition-based takeaway.
+
+1. Create a Weatherstack account and get an access key.
+2. Set the key in your shell as `WEATHERSTACK_ACCESS_KEY`.
+3. Run `python api_script.py "Tokyo"`.
+
+Use `--units imperial` for Fahrenheit and miles, or `--units scientific` for Kelvin. Metric units are the default. The API key is read from the environment and should not be committed to the repository.
