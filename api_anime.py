@@ -1,138 +1,91 @@
-"""Show a small anime leaderboard using the free Jikan API."""
-
-import json
-import threading
-import tkinter as tk
-from collections import Counter
-from tkinter import messagebox, ttk
-from urllib.error import URLError
+﻿# Look up anime details using Anime News Network's encyclopedia API.
+import time
+import textwrap
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+from xml.etree import ElementTree as ET
 
 
-API_URL = "https://api.jikan.moe/v4/top/anime?limit=15"
+API_URL = "https://cdn.animenewsnetwork.com/encyclopedia/api.xml"
 
 
-def load_anime():
-	"""Download the current top anime list from Jikan."""
-	with urlopen(API_URL, timeout=20) as response:
-		result = json.load(response)
-	return result["data"]
+def load_anime(anime_id):
+    # ANN returns XML rather than JSON.
+    with urlopen(f"{API_URL}?anime={anime_id}", timeout=20) as response:
+        root = ET.parse(response).getroot()
+    anime = root.find("anime")
+    if anime is None:
+        raise ValueError("No anime found for that ID.")
+    return anime
 
 
-def show_anime(anime_list):
-	"""Put the anime list and a few quick statistics in the window."""
-	for row in table.get_children():
-		table.delete(row)
-
-	genres = Counter()
-	scores = []
-	total_members = 0
-
-	for anime in anime_list:
-		anime_genres = [genre["name"] for genre in anime.get("genres", [])]
-		genres.update(anime_genres)
-		score = anime.get("score")
-		if score is not None:
-			scores.append(score)
-		total_members += anime.get("members") or 0
-
-		table.insert(
-			"",
-			"end",
-			values=(
-				anime.get("rank", "-"),
-				anime.get("title_english") or anime.get("title", "Unknown"),
-				f"{score:.2f}" if score is not None else "N/A",
-				f"{(anime.get('members') or 0):,}",
-				", ".join(anime_genres[:3]) or "-",
-			),
-		)
-
-	average_score = sum(scores) / len(scores) if scores else 0
-	popular_genre = genres.most_common(1)[0][0] if genres else "N/A"
-	summary.config(
-		text=(
-			f"Showing {len(anime_list)} titles    "
-			f"Average score: {average_score:.2f}/10    "
-			f"Combined members: {total_members:,}    "
-			f"Most common genre: {popular_genre}"
-		)
-	)
-	status.config(text="Updated from Jikan")
+def get_info(anime, field):
+    # Collect matching fields, since an anime can have several genres or themes.
+    values = ["".join(item.itertext()).strip()
+              for item in anime.findall("info") if item.get("type") == field]
+    return ", ".join(value for value in values if value) or "Unavailable"
 
 
-def refresh():
-	"""Fetch data in the background so the window stays responsive."""
-	refresh_button.config(state="disabled")
-	status.config(text="Loading anime rankings...")
+def show_anime(anime, choice):
+    print(f"\n{anime.get('name', 'Unknown title')}")
+    if choice in ("1", "3"):
+        print(f"Format: {anime.get('type', 'Unavailable')}")
+        print(f"Episodes: {get_info(anime, 'Number of episodes')}")
+        print(f"Release dates: {get_info(anime, 'Vintage')}")
+        print(f"Genres: {get_info(anime, 'Genres')}")
+        print(f"Themes: {get_info(anime, 'Themes')}")
+        ratings = anime.find("ratings")
+        if ratings is not None and ratings.get("weighted_score"):
+            score = float(ratings.get("weighted_score"))
+            print(f"User rating: {score:.2f}/10 ({ratings.get('nb_votes', '?')} votes)")
+    if choice in ("2", "3"):
+        print("\nPlot summary:")
+        print(textwrap.fill(get_info(anime, "Plot Summary"), width=80))
 
-	def fetch():
-		try:
-			anime_list = load_anime()
-			window.after(0, lambda: show_anime(anime_list))
-		except (URLError, TimeoutError, json.JSONDecodeError, KeyError, TypeError) as error:
-			window.after(0, lambda error=error: show_error(error))
-
-	def show_error(error):
-		status.config(text="Could not load anime rankings")
-		messagebox.showerror(
-			"Jikan request failed",
-			f"Check your internet connection and try again.\n\n{error}",
-		)
-
-	threading.Thread(target=fetch, daemon=True).start()
-	window.after(100, enable_refresh)
+    print("\nSource: Anime News Network")
+    print(f"https://www.animenewsnetwork.com/encyclopedia/anime.php?id={anime.get('id')}")
 
 
-def enable_refresh():
-	"""Re-enable refresh after the request completes or fails."""
-	if status.cget("text") != "Loading anime rankings...":
-		refresh_button.config(state="normal")
-	else:
-		window.after(100, enable_refresh)
+def main():
+    print("Anime lookup (Anime News Network)")
+    print("Use the ID from an ANN anime page's URL. Example: 4658 = Jinki:Extend.")
+    # Reuse results and space requests to avoid repeatedly fetching the same data.
+    cache = {}
+    last_request = 0
+    try:
+        while True:
+            answer = input("\nAnime ID (Enter for 4658, or quit): ").strip()
+            if answer.lower() in ("quit", "exit"):
+                break
+            answer = answer or "4658"
+            if not answer.isascii() or not answer.isdigit() or int(answer) < 1:
+                print("Please enter a positive numeric anime ID.")
+                continue
+            anime_id = int(answer)
+
+            choice = input("Show 1) overview, 2) plot, 3) both [3]: ").strip() or "3"
+            while choice not in ("1", "2", "3"):
+                choice = input("Please choose 1, 2, or 3: ").strip()
+
+            try:
+                if anime_id not in cache:
+                    time.sleep(max(0, 1 - (time.monotonic() - last_request)))
+                    last_request = time.monotonic()
+                    print("Loading...")
+                    cache[anime_id] = load_anime(anime_id)
+                show_anime(cache[anime_id], choice)
+            except HTTPError as error:
+                print(f"ANN returned HTTP {error.code}. Please try again later.")
+            except (URLError, TimeoutError):
+                print("Could not reach Anime News Network. Please try again.")
+            except ET.ParseError:
+                print("ANN returned an unexpected response. Please try again later.")
+            except ValueError as error:
+                print(error)
+    except (KeyboardInterrupt, EOFError):
+        print()
+    print("Goodbye!")
 
 
-# Build the window and its leaderboard.
-window = tk.Tk()
-window.title("Anime Top 15 | Jikan")
-window.geometry("900x500")
-window.minsize(650, 350)
-
-heading = ttk.Frame(window, padding=(18, 16, 18, 8))
-heading.pack(fill="x")
-ttk.Label(heading, text="Anime Top 15", font=("TkDefaultFont", 18, "bold")).pack(
-	side="left"
-)
-refresh_button = ttk.Button(heading, text="Refresh", command=refresh)
-refresh_button.pack(side="right")
-
-summary = ttk.Label(window, text="", padding=(18, 4, 18, 12))
-summary.pack(fill="x")
-
-columns = ("rank", "title", "score", "members", "genres")
-table = ttk.Treeview(window, columns=columns, show="headings")
-for column, label, width in (
-	("rank", "Rank", 55),
-	("title", "Anime", 300),
-	("score", "Score", 75),
-	("members", "Members", 110),
-	("genres", "Genres", 230),
-):
-	table.heading(column, text=label)
-	table.column(
-		column,
-		width=width,
-		anchor="w" if column in ("title", "genres") else "center",
-	)
-
-scrollbar = ttk.Scrollbar(window, orient="vertical", command=table.yview)
-table.configure(yscrollcommand=scrollbar.set)
-table.pack(side="left", fill="both", expand=True, padx=(18, 0), pady=4)
-scrollbar.pack(side="right", fill="y", padx=(0, 18), pady=4)
-
-status = ttk.Label(window, text="Ready", anchor="w", padding=(18, 10))
-status.pack(side="bottom", fill="x")
-
-# Load the leaderboard as soon as the app opens.
-refresh()
-window.mainloop()
+if __name__ == "__main__":
+    main()

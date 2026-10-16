@@ -32,3 +32,11 @@ Python 3 and an internet connection are required. No extra Python packages are n
 3. Type a message and press Enter. Type `quit` or `exit` to stop.
 
 The chatbot keeps conversation history until you exit. It uses only Python's standard library.
+
+## Anime encyclopedia lookup
+
+Run `python api_anime.py` or press Run in your editor's terminal. Enter an Anime News Network encyclopedia ID, then choose an overview, plot summary, or both. Press Enter to try ID `4658` (Jinki:Extend). Type `quit` at the ID prompt to exit.
+
+Find an ID at the end of an ANN anime page's URL, such as `anime.php?id=4658`. The script selects useful fields from the XML response, including episodes, genres, release dates, and user ratings. Results are cached for the current session, and requests are spaced at least one second apart.
+
+Data comes from [Anime News Network's encyclopedia API](https://www.animenewsnetwork.com/encyclopedia/api.php). No API key or extra packages are needed. All three scripts run entirely in the terminal.

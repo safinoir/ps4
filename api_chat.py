@@ -4,6 +4,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 # Navigator connection settings.
+# API key is limited and will be deleted once graded.
 API_KEY = "sk-gQyCQFaksVoq3t8vlpcMyQ"
 API_URL = "https://api.navigator.ai.ufl.edu/v1/chat/completions"
 MODEL = "meta-muse-glimmer-30b"
