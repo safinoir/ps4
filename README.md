@@ -14,10 +14,11 @@ Submit as a link to a public github repository. We will try doing peer review fo
 
 ## Weatherstack Field Note
 
-The script fetches current conditions from Weatherstack and turns selected fields into a compact field note with visual meters and a condition-based takeaway.
+The script fetches current conditions from Weatherstack and prints selected fields, including temperature, humidity, wind speed, and UV index. It also interprets the conditions to give a short weather note instead of printing the entire API response.
 
-1. Create a Weatherstack account and get an access key.
-2. Set the key in your shell as `WEATHERSTACK_ACCESS_KEY`.
-3. Run `python api_script.py "Tokyo"`.
+1. Open `api_script.py` and press Run in your editor, or run `python api_script.py` in a terminal. Use a terminal-based Run option so you can type your answers.
+2. Enter a city or place and choose metric, imperial, or scientific units. Press Enter at the units prompt to use metric.
 
-Use `--units imperial` for Fahrenheit and miles, or `--units scientific` for Kelvin. Metric units are the default. The API key is read from the environment and should not be committed to the repository.
+Metric uses Celsius and km/h, imperial uses Fahrenheit and mph, and scientific uses Kelvin and km/h. The Weatherstack API key is set in `ACCESS_KEY` near the top of the script.
+
+Python 3 and an internet connection are required. No extra Python packages are needed.
